@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNISPORTS.com</title>
+    <!-- Font Awesome (for social media icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Animate.css for animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <header>
+        <div class="navigation">
+            <nav class="nav_bar">
+                <a href="announcements.php">Announcements</a>
+                <a href="#">Browse</a>
+                <a href="https://www.pondiuni.edu.in/wp-content/uploads/2025/03/Calendar2025.pdf">Calendar</a>
+            </nav>
+        </div>
+        <div class="logo">
+            <a href="https://www.pondiuni.edu.in/"><img class="pu_home" src="images/logo.png" alt="PU"></a>
+        </div>
+        <div>
+            <nav class="nav_bar">
+                <a href="facilities.html">Facilities</a>
+                <a href="https://www.pondiuni.edu.in/contact-directory/">Contacts</a>
+                <a href="register.php">Register</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main -->
+    <main>
+        <!-- Hero Image -->
+        <div class="main_container">
+            <img class="main_image" src="images/main.jpg" alt="PU Entrance">
+            <div class="hero-overlay">
+                <img src="images/logokhelogram-removebg-preview.png" alt="University Logo" class="khelogram-logo">
+                <h1 class="animate__animated animate__fadeInDown">KHELOGRAM</h1>
+                <p class="animate__animated animate__fadeInUp">Your premier destination for university sports and athletic events</p>
+                <button class="cta-button">Explore Sports</button>
+            </div>
+        </div>
+
+        <!-- Carousel Section -->
+        <section class="carousel_section">
+            <h2 class="section-title">Latest Events</h2>
+            <div class="carousel">
+                <div class="slides">
+                    <img src="images/7.webp" alt="Sports Event">
+                    <img src="images/6.webp" alt="Basketball Tournament">
+                    <img src="images/2.webp" alt="Football Match">
+                    <img src="images/4.webp" alt="Athletics Competition">
+                    <img src="images/3.webp" alt="Cricket Game">
+                    <img src="images/1.webp" alt="University Sports">
+                </div>
+                <button class="prev">&#10094;</button>
+                <button class="next">&#10095;</button>
+                <div class="dots"></div>
+            </div>
+        </section>
+
+        <!-- Sports Section -->
+        <section class="sports_section">
+            <h2 class="section-title">Sports Events</h2>
+            <input type="text" id="searchBar" placeholder="Search for a sport...">
+
+            <div class="sports_grid">
+                <div class="sport_card">
+                    <img src="images/football.jpg" alt="Football">
+                    <h3>Football</h3>
+                    <p>University Football League matches every weekend.</p>
+                    <button data-info="Football league details coming soon! Stay tuned for updates on our upcoming matches and tournaments.">View Details</button>
+                </div>
+                <div class="sport_card">
+                    <img src="images/basketball.jpg" alt="Basketball">
+                    <h3>Basketball</h3>
+                    <p>Inter-college basketball tournament coming soon!</p>
+                    <button data-info="Basketball tournament registration opens next week. Don't miss your chance to compete!">Register</button>
+                </div>
+                <div class="sport_card">
+                    <img src="images/cricket.jpg" alt="Cricket">
+                    <h3>Cricket</h3>
+                    <p>Annual Cricket Championship starts in October.</p>
+                    <button data-info="Cricket championship schedule will be announced soon. Get your teams ready!">Learn More</button>
+                </div>
+                <div class="sport_card">
+                    <img src="images/athealatics.jpg" alt="Athletics">
+                    <h3>Athletics</h3>
+                    <p>Track & field events including 100m, relay, and more.</p>
+                    <button data-info="Athletics team trials open next month. Show us your speed and strength!">Join Team</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal Popup -->
+    <div id="modal" class="modal">
+        <div class="modal_content">
+            <span class="close">&times;</span>
+            <p id="modalText"></p>
+        </div>
+    </div>
+
+    <!-- Scroll to Top Button -->
+    <div class="scroll-top" id="scrollTop">
+        <i class="fas fa-arrow-up"></i>
+    </div>
+
+    <!-- Notification Toast -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage"></span>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-container">
+            <!-- Column 1: About -->
+            <div class="footer-column about">
+                <img src="images/logokhelogram-removebg-preview.png" alt="University Logo" class="footer-logo">
+                <p>
+                    The digital platform designed to centralize and streamline all activities related to sports within the university
+                </p>
+            </div>
+
+            <!-- Column 2: Quick Links -->
+            <div class="footer-column">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="#">Home</a></li>
+                    <li><a href="#">Facilities</a></li>
+                    <li><a href="#">Announcements</a></li>
+                    <li><a href="#">Contact</a></li>
+                </ul>
+            </div>
+
+            <!-- Column 3: Resources -->
+            <div class="footer-column">
+                <h3>Resources</h3>
+                <ul>
+                    <li><a href="#">Results</a></li>
+                    <li><a href="#">Alumni</a></li>
+                    <li><a href="#">Research</a></li>
+                    <li><a href="#">Events</a></li>
+                </ul>
+            </div>
+
+            <!-- Column 4: Contact -->
+            <div class="footer-column">
+                <h3>Contact Us</h3>
+                <p>University Campus,<br>Pondicherry, India - 605014</p>
+                <p>Phone: +91-1234567890</p>
+                <p>Email: sports@pondiuni.edu.in</p>
+
+                <div class="social-icons">
+                    <a href="https://www.facebook.com/PondicherryUniversityOfficial" target="_blank"><i
+                            class="fab fa-facebook-f"></i></a>
+                    <a href="https://x.com/PondiUniVC" target="_blank"><i class="fab fa-twitter"></i></a>
+                    <a href="https://www.linkedin.com/school/pondicherry-university/" target="_blank"><i
+                            class="fab fa-linkedin-in"></i></a>
+                    <a href="https://www.youtube.com/c/PondicherryUniversity" target="_blank"><i
+                            class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+            <p>© 2025 KHELOGRAM. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="script.js"></script>
+</body>
+
+</html>
