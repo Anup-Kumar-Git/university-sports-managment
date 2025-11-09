@@ -2,12 +2,8 @@
 include 'db_connect.php';
 session_start();
 
-// Helper: sanitize input
-function clean($v) {
-    return trim($v);
-}
+function clean($v) { return trim($v); }
 
-// Allowed image mime types
 $allowed_image_types = ['image/jpeg','image/png','image/webp','image/gif'];
 
 /* ------------------------------
@@ -22,99 +18,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_type']) && $
     $description = clean($_POST['org_desc'] ?? '');
     $photo_name = null;
 
-    // Basic server-side validation
     if (!$name || !$email || !$password || !$event_name) {
         echo "<script>alert('Please fill required organiser fields.'); window.location.href='register.php';</script>";
         exit;
     }
 
-    // Handle photo upload if provided
     if (!empty($_FILES['org_photo']) && $_FILES['org_photo']['error'] === 0) {
         $tmp = $_FILES['org_photo']['tmp_name'];
         $orig = basename($_FILES['org_photo']['name']);
         $mime = mime_content_type($tmp);
         if (!in_array($mime, $allowed_image_types)) {
-            echo "<script>alert('Invalid image type for event photo. Allowed: jpg, png, webp, gif'); window.location.href='register.php';</script>";
+            echo "<script>alert('Invalid image type. Allowed: jpg, png, webp, gif'); window.location.href='register.php';</script>";
             exit;
         }
         $ext = pathinfo($orig, PATHINFO_EXTENSION);
         $photo_name = time() . "_" . bin2hex(random_bytes(6)) . "." . $ext;
         $target_path = __DIR__ . "/uploads/" . $photo_name;
-        if (!is_dir(__DIR__ . "/uploads")) {
-            mkdir(__DIR__ . "/uploads", 0755, true);
-        }
-        if (!move_uploaded_file($tmp, $target_path)) {
-            echo "<script>alert('Failed to upload event photo.'); window.location.href='register.php';</script>";
-            exit;
-        }
+        if (!is_dir(__DIR__ . "/uploads")) mkdir(__DIR__ . "/uploads", 0755, true);
+        move_uploaded_file($tmp, $target_path);
     }
 
-    // Hash password
     $password_hash = password_hash($password, PASSWORD_DEFAULT);
-
-    // Insert into DB with prepared statement
     $stmt = $conn->prepare("INSERT INTO organisers (name, email, phone, password, event_name, description, event_photo) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    if (!$stmt) {
-        echo "<script>alert('Database error: prepare failed');</script>";
-    } else {
+    if ($stmt) {
         $stmt->bind_param("sssssss", $name, $email, $phone, $password_hash, $event_name, $description, $photo_name);
         if ($stmt->execute()) {
-            $stmt->close();
             echo "<script>alert('Organiser registered successfully!'); window.location.href='register.php';</script>";
             exit;
         } else {
-            // if duplicate email or other error
-            $err = $stmt->error;
-            $stmt->close();
-            echo "<script>alert('Registration failed: ".htmlspecialchars($err)."'); window.location.href='register.php';</script>";
-            exit;
+            echo "<script>alert('Registration failed: ".htmlspecialchars($stmt->error)."');</script>";
         }
-    }
-}
-
-/* ------------------------------
-   Handle participant registration
-   ------------------------------ */
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_type']) && $_POST['register_type'] === 'participant') {
-    $name = clean($_POST['part_name'] ?? '');
-    $email = clean($_POST['part_email'] ?? '');
-    $phone = clean($_POST['part_phone'] ?? '');
-    $sport = clean($_POST['part_sport'] ?? '');
-    $message = clean($_POST['part_message'] ?? '');
-    $player_list = null;
-
-    // Handle file (player list) if provided
-    if (!empty($_FILES['part_list']) && $_FILES['part_list']['error'] === 0) {
-        $tmp = $_FILES['part_list']['tmp_name'];
-        $orig = basename($_FILES['part_list']['name']);
-        // Accept any file but limit size (example)
-        $ext = pathinfo($orig, PATHINFO_EXTENSION);
-        $player_list = time() . "_" . bin2hex(random_bytes(6)) . "." . $ext;
-        $target_path = __DIR__ . "/uploads/" . $player_list;
-        if (!is_dir(__DIR__ . "/uploads")) {
-            mkdir(__DIR__ . "/uploads", 0755, true);
-        }
-        if (!move_uploaded_file($tmp, $target_path)) {
-            echo "<script>alert('Failed to upload player list.'); window.location.href='register.php';</script>";
-            exit;
-        }
-    }
-
-    $stmt = $conn->prepare("INSERT INTO participants (name, email, phone, sport, player_list, message) VALUES (?, ?, ?, ?, ?, ?)");
-    if (!$stmt) {
-        echo "<script>alert('Database error: prepare failed');</script>";
-    } else {
-        $stmt->bind_param("ssssss", $name, $email, $phone, $sport, $player_list, $message);
-        if ($stmt->execute()) {
-            $stmt->close();
-            echo "<script>alert('Participant registered successfully!'); window.location.href='register.php';</script>";
-            exit;
-        } else {
-            $err = $stmt->error;
-            $stmt->close();
-            echo "<script>alert('Registration failed: ".htmlspecialchars($err)."'); window.location.href='register.php';</script>";
-            exit;
-        }
+        $stmt->close();
     }
 }
 
@@ -125,10 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_organiser'])) {
     $email = clean($_POST['login_email'] ?? '');
     $password = $_POST['login_password'] ?? '';
 
-    $stmt = $conn->prepare("SELECT id, name, email, phone, password FROM organisers WHERE email = ?");
-    if (!$stmt) {
-        echo "<script>alert('Database error: prepare failed');</script>";
-    } else {
+    $stmt = $conn->prepare("SELECT id, name, password FROM organisers WHERE email = ?");
+    if ($stmt) {
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -137,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_organiser'])) {
             if (password_verify($password, $user['password'])) {
                 $_SESSION['organiser_id'] = $user['id'];
                 $_SESSION['organiser_name'] = $user['name'];
-                header("Location: organiser_dashboard.php"); // create later if needed
+                header("Location: organiser_dashboard.php");
                 exit;
             } else {
                 echo "<script>alert('Invalid password');</script>";
@@ -153,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_organiser'])) {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Register | KHELOGRAM</title>
+  <title>Organiser | KHELOGRAM</title>
   <link rel="stylesheet" href="styles.css">
   <style>
     body {
@@ -161,11 +93,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_organiser'])) {
       font-family: 'Kanit', sans-serif;
     }
 
-    /* ==== REGISTRATION AREA ==== */
     .register_section {
       display: flex;
       justify-content: center;
-      align-items: flex-start;
       padding: 70px 20px;
     }
 
@@ -179,11 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_organiser'])) {
       transition: all 0.3s ease;
     }
 
-    .register_container:hover {
-      transform: translateY(-5px);
-    }
-
-    .register_container h1 {
+    h1 {
       text-align: center;
       color: #00274d;
       font-size: 28px;
@@ -193,29 +119,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_organiser'])) {
     .subtitle {
       text-align: center;
       color: #555;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
       font-size: 16px;
     }
 
-    .register_tabs {
+    .switch-buttons {
       display: flex;
       justify-content: center;
       margin-bottom: 25px;
     }
 
-    .tab-btn {
+    .switch-buttons button {
       flex: 1;
+      max-width: 180px;
+      margin: 0 10px;
       padding: 12px;
-      background: #ddd;
       border: none;
+      border-radius: 8px;
+      background: #ddd;
       cursor: pointer;
       font-size: 16px;
-      border-radius: 8px 8px 0 0;
-      transition: background 0.3s ease;
-      margin: 0 6px;
+      transition: 0.3s;
     }
 
-    .tab-btn.active {
+    .switch-buttons button.active {
       background: #00274d;
       color: white;
       font-weight: bold;
@@ -237,20 +164,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_organiser'])) {
       color: #333;
     }
 
-    input, select, textarea {
+    input, textarea {
       width: 100%;
       padding: 10px;
       border-radius: 8px;
       border: 1px solid #ccc;
       margin-bottom: 15px;
       font-size: 15px;
-      transition: all 0.3s ease;
+      transition: 0.3s;
     }
 
-    input:focus, textarea:focus, select:focus {
+    input:focus, textarea:focus {
       outline: none;
       border-color: #00274d;
-      box-shadow: 0 0 4px rgba(0, 39, 77, 0.4);
+      box-shadow: 0 0 4px rgba(0,39,77,0.4);
     }
 
     button[type="submit"] {
@@ -261,85 +188,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_organiser'])) {
       padding: 12px;
       font-size: 16px;
       cursor: pointer;
-      transition: background 0.3s ease;
       width: 100%;
+      transition: background 0.3s ease;
     }
 
     button[type="submit"]:hover {
       background: #004080;
     }
 
-    .login-btn {
-      margin-top: 25px;
-      width: 100%;
-      background: #0066cc;
-      color: white;
-      padding: 12px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      cursor: pointer;
-      transition: 0.3s ease;
-    }
-
-    .login-btn:hover {
-      background: #004a99;
-    }
-
-    /* ==== LOGIN MODAL ==== */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background-color: rgba(0, 0, 0, 0.6);
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-
-    .modal-content {
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      width: 400px;
-      position: relative;
-      text-align: center;
-      animation: slideDown 0.3s ease;
-    }
-
-    .modal-content input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-
-    .close {
-      position: absolute;
-      top: 15px;
-      right: 20px;
-      font-size: 22px;
-      cursor: pointer;
-      color: #333;
-    }
-
     @keyframes fadeIn {
       from {opacity: 0;}
       to {opacity: 1;}
     }
-
-    @keyframes slideDown {
-      from {transform: translateY(-30px); opacity: 0;}
-      to {transform: translateY(0); opacity: 1;}
-    }
   </style>
 </head>
-
 <body>
 
-  <!-- ==== SAME HEADER ==== -->
   <header>
     <div class="navigation">
       <nav class="nav_bar">
@@ -362,20 +226,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_organiser'])) {
     </div>
   </header>
 
-  <!-- ==== MAIN CONTENT ==== -->
   <main>
     <section class="register_section">
       <div class="register_container">
-        <h1>Register for Sports Events</h1>
-        <p class="subtitle">Select your role to participate in KHELOGRAM</p>
+        <h1>Organiser Portal</h1>
+        <p class="subtitle">Register or Login to manage your sports event</p>
 
-        <div class="register_tabs">
-          <button class="tab-btn active" data-target="#organiserForm">Organiser</button>
-          <button class="tab-btn" data-target="#participantForm">Participant</button>
+        <div class="switch-buttons">
+          <button id="showRegister" class="active">Register</button>
+          <button id="showLogin">Login</button>
         </div>
 
-        <!-- Organiser Form -->
-        <form id="organiserForm" class="active" method="POST" enctype="multipart/form-data">
+        <!-- Register Form -->
+        <form id="registerForm" class="active" method="POST" enctype="multipart/form-data">
           <input type="hidden" name="register_type" value="organiser">
           <label>Full Name</label>
           <input type="text" name="org_name" placeholder="Enter your name" required>
@@ -391,70 +254,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_organiser'])) {
           <textarea name="org_desc" rows="3" placeholder="Describe your event"></textarea>
           <label>Upload Event Photo</label>
           <input type="file" name="org_photo" accept="image/*">
-          <button type="submit">Submit as Organiser</button>
+          <button type="submit">Submit</button>
         </form>
 
-        <!-- Participant Form -->
-        <form id="participantForm" method="POST" enctype="multipart/form-data">
-          <input type="hidden" name="register_type" value="participant">
-          <label>Full Name</label>
-          <input type="text" name="part_name" placeholder="Enter your name" required>
+        <!-- Login Form -->
+        <form id="loginForm" method="POST">
           <label>Email</label>
-          <input type="email" name="part_email" placeholder="Enter your email" required>
-          <label>Phone Number</label>
-          <input type="tel" name="part_phone" placeholder="Enter phone number" required>
-          <label>Select Sport</label>
-          <select name="part_sport" required>
-            <option value="">Choose a sport</option>
-            <option>Football</option>
-            <option>Cricket</option>
-            <option>Basketball</option>
-            <option>Athletics</option>
-            <option>Volleyball</option>
-          </select>
-          <label>Upload Player List</label>
-          <input type="file" name="part_list">
-          <label>Message (Optional)</label>
-          <textarea name="part_message" rows="3" placeholder="Any message or notes"></textarea>
-          <button type="submit">Submit as Participant</button>
+          <input type="email" name="login_email" placeholder="Enter your email" required>
+          <label>Password</label>
+          <input type="password" name="login_password" placeholder="Enter password" required>
+          <button type="submit" name="login_organiser">Login</button>
         </form>
-
-        <button class="login-btn" id="openLogin">Login as Organiser</button>
       </div>
     </section>
   </main>
 
-  <!-- ==== LOGIN MODAL ==== -->
-  <div id="loginModal" class="modal">
-    <div class="modal-content">
-      <span class="close" id="closeModal">&times;</span>
-      <h2>Login as Organiser</h2>
-      <form method="POST">
-        <input type="email" name="login_email" placeholder="Email" required>
-        <input type="password" name="login_password" placeholder="Password" required>
-        <button type="submit" name="login_organiser">Login</button>
-      </form>
-    </div>
-  </div>
-
   <script>
-    // Tabs
-    const tabs = document.querySelectorAll(".tab-btn");
-    const forms = document.querySelectorAll("form");
-    tabs.forEach(tab => {
-      tab.addEventListener("click", () => {
-        tabs.forEach(t => t.classList.remove("active"));
-        forms.forEach(f => f.classList.remove("active"));
-        tab.classList.add("active");
-        document.querySelector(tab.dataset.target).classList.add("active");
-      });
+    const registerBtn = document.getElementById('showRegister');
+    const loginBtn = document.getElementById('showLogin');
+    const registerForm = document.getElementById('registerForm');
+    const loginForm = document.getElementById('loginForm');
+
+    registerBtn.addEventListener('click', () => {
+      registerBtn.classList.add('active');
+      loginBtn.classList.remove('active');
+      registerForm.classList.add('active');
+      loginForm.classList.remove('active');
     });
 
-    // Modal
-    const modal = document.getElementById("loginModal");
-    document.getElementById("openLogin").onclick = () => modal.style.display = "flex";
-    document.getElementById("closeModal").onclick = () => modal.style.display = "none";
-    window.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
+    loginBtn.addEventListener('click', () => {
+      loginBtn.classList.add('active');
+      registerBtn.classList.remove('active');
+      loginForm.classList.add('active');
+      registerForm.classList.remove('active');
+    });
   </script>
 </body>
 </html>
