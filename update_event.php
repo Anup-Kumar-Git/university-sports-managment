@@ -6,31 +6,81 @@ if (!isset($_SESSION['organiser_id'])) {
     header("Location: register.php");
     exit;
 }
+$organiser_id = (int)$_SESSION['organiser_id'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $event_id = $_POST['event_id'];
-    $event_name = $_POST['event_name'];
-    $description = $_POST['description'];
+    $event_id = (int)($_POST['event_id'] ?? 0);
+    $event_name = trim($_POST['event_name'] ?? '');
+    $description = trim($_POST['description'] ?? '');
+    $event_date = $_POST['event_date'] ?? null;
 
-    // Handle new image upload if provided
-    $image_name = null;
-    if (!empty($_FILES['event_photo']['name'])) {
-        $target_dir = "uploads/";
-        $image_name = time() . "_" . basename($_FILES["event_photo"]["name"]);
-        $target_file = $target_dir . $image_name;
-        move_uploaded_file($_FILES["event_photo"]["tmp_name"], $target_file);
-
-        $stmt = $conn->prepare("UPDATE organisers SET event_name = ?, description = ?, event_photo = ? WHERE id = ?");
-        $stmt->bind_param("sssi", $event_name, $description, $image_name, $event_id);
-    } else {
-        $stmt = $conn->prepare("UPDATE organisers SET event_name = ?, description = ? WHERE id = ?");
-        $stmt->bind_param("ssi", $event_name, $description, $event_id);
+    if ($event_id <= 0 || $event_name === '' || $description === '') {
+        echo "<script>alert('Please fill all required fields'); history.back();</script>";
+        exit;
     }
 
+    // Ensure event belongs to organiser
+    $stmt = $conn->prepare("SELECT event_photo FROM events WHERE id = ? AND organiser_id = ?");
+    $stmt->bind_param("ii", $event_id, $organiser_id);
     $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
 
-    echo "<script>alert('Event updated successfully!'); window.location.href='organiser_dashboard.php';</script>";
-    exit;
+    if (!$row) {
+        echo "<script>alert('Event not found.'); window.location.href='organiser_dashboard.php';</script>";
+        exit;
+    }
+
+    $photo_name = $row['event_photo'];
+
+    // Optional new image
+    if (!empty($_FILES['event_photo']) && $_FILES['event_photo']['error'] === 0) {
+        $tmp = $_FILES['event_photo']['tmp_name'];
+        $orig = basename($_FILES['event_photo']['name']);
+        $mime = mime_content_type($tmp);
+        $allowed = ['image/jpeg','image/png','image/webp','image/gif'];
+        if (!in_array($mime, $allowed)) {
+            echo "<script>alert('Invalid image type.'); history.back();</script>";
+            exit;
+        }
+        $ext = pathinfo($orig, PATHINFO_EXTENSION);
+
+        // get organiser email for filename prefix
+        $s = $conn->prepare("SELECT email FROM organisers WHERE id = ?");
+        $s->bind_param("i", $organiser_id);
+        $s->execute();
+        $org = $s->get_result()->fetch_assoc();
+        $s->close();
+        $prefix = $org ? $org['email'] : ('org_'.$organiser_id);
+
+        $new_name = $prefix . '_' . time() . '.' . $ext;
+        if (!is_dir(__DIR__ . '/uploads')) {
+            mkdir(__DIR__ . '/uploads', 0755, true);
+        }
+        if (!move_uploaded_file($tmp, __DIR__ . '/uploads/' . $new_name)) {
+            echo "<script>alert('Failed to upload image.'); history.back();</script>";
+            exit;
+        }
+        $photo_name = $new_name;
+    }
+
+    $stmt = $conn->prepare("
+        UPDATE events
+        SET event_name = ?, description = ?, event_date = ?, event_photo = ?
+        WHERE id = ? AND organiser_id = ?
+    ");
+    $stmt->bind_param("ssssii", $event_name, $description, $event_date, $photo_name, $event_id, $organiser_id);
+
+    if ($stmt->execute()) {
+        $stmt->close();
+        echo "<script>alert('Event updated!'); window.location.href='organiser_dashboard.php';</script>";
+        exit;
+    } else {
+        $err = $stmt->error;
+        $stmt->close();
+        echo "<script>alert('Failed to update event: ".htmlspecialchars($err)."'); history.back();</script>";
+        exit;
+    }
 }
-?>
+
+header("Location: organiser_dashboard.php");
